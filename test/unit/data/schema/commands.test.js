@@ -33,4 +33,34 @@ describe('schema commands', function () {
             err.message.should.equal('Must use hasPrimaryKeySQLite on an SQLite3 database');
         }
     });
+
+    it('_hasForeignSQLite throws when knex is nox configured to use sqlite3', async function () {
+        const Knex = require('knex');
+        const knex = Knex({
+            client: 'pg'
+        });
+
+        try {
+            await commands._hasForeignSQLite({transaction: knex});
+            should.fail('addForeign did not throw');
+        } catch (err) {
+            should.equal(err instanceof errors.GhostError, true);
+            err.message.should.equal('Must use hasForeignSQLite3 on an SQLite3 database');
+        }
+    });
+
+    it('_hasPrimaryKeySQLite throws when knex is configured to use sqlite', async function () {
+        const Knex = require('knex');
+        const knex = Knex({
+            client: 'pg'
+        });
+
+        try {
+            await commands._hasPrimaryKeySQLite(null, knex);
+            should.fail('hasPrimaryKeySQLite did not throw');
+        } catch (err) {
+            should.equal(err instanceof errors.GhostError, true);
+            err.message.should.equal('Must use hasPrimaryKeySQLite on an SQLite3 database');
+        }
+    });
 });
