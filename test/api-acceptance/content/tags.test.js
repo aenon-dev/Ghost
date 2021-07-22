@@ -40,7 +40,7 @@ describe('Tags Content API', function () {
         // Default order 'name asc' check
         // the ordering difference is described in https://github.com/TryGhost/Ghost/issues/6104
         // this condition should be removed once issue mentioned above ^ is resolved
-        if (process.env.NODE_ENV === 'testing-mysql') {
+        if (process.env.NODE_ENV === 'testing-mysql' || process.env.NODE_ENV === 'testing-pg') {
             jsonResponse.tags[0].name.should.eql('bacon');
             jsonResponse.tags[3].name.should.eql('kitchen sink');
         } else {
