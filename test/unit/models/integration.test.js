@@ -63,7 +63,9 @@ describe('Unit: models/integration', function () {
                 filter: 'type:[custom,builtin]'
             }).then(() => {
                 queries.length.should.eql(1);
-                queries[0].sql.should.eql('select `integrations`.* from `integrations` where `integrations`.`type` in (?, ?) and `integrations`.`id` = ? limit ?');
+                queries[0].sql.should.be.equalOneOf(
+                    'select `integrations`.* from `integrations` where `integrations`.`type` in (?, ?) and `integrations`.`id` = ? limit ?',
+                    'select "integrations".* from "integrations" where "integrations"."type" in ($1, $2) and "integrations"."id" = $3 limit $4');
                 queries[0].bindings.should.eql(['custom', 'builtin', '123', 1]);
             });
         });

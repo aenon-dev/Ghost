@@ -48,7 +48,9 @@ describe('Unit: models/tag', function () {
             }).then(() => {
                 queries.length.should.eql(1);
 
-                queries[0].sql.should.eql('select `tags`.*, (select count(`posts`.`id`) from `posts` left outer join `posts_tags` on `posts`.`id` = `posts_tags`.`post_id` where posts_tags.tag_id = tags.id) as `count__posts` from `tags` where `count`.`posts` >= ? order by `count__posts` DESC');
+                queries[0].sql.should.be.equalOneOf(
+                    'select `tags`.*, (select count(`posts`.`id`) from `posts` left outer join `posts_tags` on `posts`.`id` = `posts_tags`.`post_id` where posts_tags.tag_id = tags.id) as `count__posts` from `tags` where `count`.`posts` >= ? order by `count__posts` DESC',
+                    'select "tags".*, (select count("posts"."id") from "posts" left outer join "posts_tags" on "posts"."id" = "posts_tags"."post_id" where posts_tags.tag_id = tags.id) as "count__posts" from "tags" where "count"."posts" >= $1 order by "count__posts" DESC');
                 queries[0].bindings.should.eql([
                     1
                 ]);
