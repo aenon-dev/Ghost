@@ -22,7 +22,9 @@ module.exports.initData = async () => {
 };
 
 module.exports.truncate = async (tableName) => {
-    if (config.get('database:client') === 'sqlite3') {
+    const client = config.get('database:client');
+
+    if (client === 'sqlite3') {
         const [foreignKeysEnabled] = await db.knex.raw('PRAGMA foreign_keys;');
         if (foreignKeysEnabled.foreign_keys) {
             await db.knex.raw('PRAGMA foreign_keys = OFF;');
@@ -34,9 +36,17 @@ module.exports.truncate = async (tableName) => {
         return;
     }
 
-    await db.knex.raw('SET FOREIGN_KEY_CHECKS=0;');
-    await db.knex(tableName).truncate();
-    await db.knex.raw('SET FOREIGN_KEY_CHECKS=1;');
+    if (client === 'mysql') {
+        await db.knex.raw('SET FOREIGN_KEY_CHECKS=0;');
+        await db.knex(tableName).truncate();
+        await db.knex.raw('SET FOREIGN_KEY_CHECKS=1;');
+    }
+
+    if (client === 'pg') {
+        await db.knex.raw("SET session_replication_role = 'replica';");
+        await db.knex(tableName).truncate();
+        await db.knex.raw("SET session_replication_role = 'origin';");
+    }
 };
 
 // we must always try to delete all tables
@@ -55,8 +65,9 @@ module.exports.teardown = () => {
     urlServiceUtils.reset();
 
     const tables = schemaTables.concat(['migrations']);
+    const client = config.get('database:client');
 
-    if (config.get('database:client') === 'sqlite3') {
+    if (client === 'sqlite3') {
         return Promise
             .mapSeries(tables, function createTable(table) {
                 return (async function () {
@@ -80,24 +91,49 @@ module.exports.teardown = () => {
             });
     }
 
-    return db.knex.transaction(function (trx) {
-        return db.knex.raw('SET FOREIGN_KEY_CHECKS=0;').transacting(trx)
-            .then(function () {
-                return Promise
-                    .each(tables, function createTable(table) {
-                        return db.knex.raw('TRUNCATE ' + table + ';').transacting(trx);
-                    });
-            })
-            .then(function () {
-                return db.knex.raw('SET FOREIGN_KEY_CHECKS=1;').transacting(trx);
-            })
-            .catch(function (err) {
-                // CASE: table does not exist
-                if (err.errno === 1146) {
-                    return Promise.resolve();
-                }
+    if (client === 'mysql') {
+        return db.knex.transaction(function (trx) {
+            return db.knex.raw('SET FOREIGN_KEY_CHECKS=0;').transacting(trx)
+                .then(function () {
+                    return Promise
+                        .each(tables, function createTable(table) {
+                            return db.knex.raw('TRUNCATE ' + table + ';').transacting(trx);
+                        });
+                })
+                .then(function () {
+                    return db.knex.raw('SET FOREIGN_KEY_CHECKS=1;').transacting(trx);
+                })
+                .catch(function (err) {
+                    // CASE: table does not exist
+                    if (err.errno === 1146) {
+                        return Promise.resolve();
+                    }
+    
+                    throw err;
+                });
+        });
+    }
 
-                throw err;
-            });
-    });
+    if (client === 'pg') {
+        return db.knex.transaction(function (trx) {
+            return db.knex.raw("SET session_replication_role = 'replica';").transacting(trx)
+                .then(function () {
+                    return Promise
+                        .each(tables, function createTable(table) {
+                            return db.knex.raw('TRUNCATE TABLE ' + table + ';').transacting(trx);
+                        });
+                })
+                .then(function () {
+                    return db.knex.raw("SET session_replication_role = 'origin';").transacting(trx);
+                })
+                .catch(function (err) {
+                    // CASE: table does not exist
+                    if (err.errno === 1146) {
+                        return Promise.resolve();
+                    }
+    
+                    throw err;
+                });
+        });
+    }
 };
