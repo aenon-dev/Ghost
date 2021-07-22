@@ -43,6 +43,11 @@ function configure(dbConfig) {
         // };
     }
 
+    if (client === 'pg') {
+        dbConfig.connection.timezone = 'UTC';
+        dbConfig.connection.charset = 'utf8';
+    }
+
     return dbConfig;
 }
 
