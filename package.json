@@ -127,7 +127,7 @@
     "juice": "8.0.0",
     "keypair": "1.0.3",
     "knex": "0.21.19",
-    "knex-migrator": "4.0.4",
+    "knex-migrator": "./knex-migrator",
     "lodash": "4.17.21",
     "mailgun-js": "0.22.0",
     "metascraper": "5.22.11",

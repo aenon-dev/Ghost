@@ -4,3 +4,6 @@
 [submodule "core/client"]
 	path = core/client
 	url = ../../TryGhost/Admin.git
+[submodule "knex-migrator"]
+	path = knex-migrator
+	url = git@github.com:aenon-dev/knex-migrator.git
