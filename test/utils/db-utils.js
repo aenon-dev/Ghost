@@ -43,9 +43,7 @@ module.exports.truncate = async (tableName) => {
     }
 
     if (client === 'pg') {
-        await db.knex.raw("SET session_replication_role = 'replica';");
-        await db.knex(tableName).truncate();
-        await db.knex.raw("SET session_replication_role = 'origin';");
+        await db.knex.raw(`TRUNCATE TABLE ${tableName} CASCADE;`);
     }
 };
 
@@ -116,19 +114,12 @@ module.exports.teardown = () => {
 
     if (client === 'pg') {
         return db.knex.transaction(function (trx) {
-            return db.knex.raw("SET session_replication_role = 'replica';").transacting(trx)
-                .then(function () {
-                    return Promise
-                        .each(tables, function createTable(table) {
-                            return db.knex.raw('TRUNCATE TABLE ' + table + ';').transacting(trx);
-                        });
-                })
-                .then(function () {
-                    return db.knex.raw("SET session_replication_role = 'origin';").transacting(trx);
+            return Promise.each(tables, function createTable(table) {
+                    return db.knex.raw(`TRUNCATE TABLE ${table} CASCADE;`).transacting(trx)
                 })
                 .catch(function (err) {
                     // CASE: table does not exist
-                    if (err.errno === 1146) {
+                    if (err.code === '42P01') {
                         return Promise.resolve();
                     }
     
