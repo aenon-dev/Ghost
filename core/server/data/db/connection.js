@@ -45,7 +45,7 @@ function configure(dbConfig) {
 
     if (client === 'pg') {
         dbConfig.connection.timezone = 'UTC';
-        dbConfig.connection.charset = 'utf8';
+        dbConfig.connection.charset = 'UTF8';
     }
 
     return dbConfig;
