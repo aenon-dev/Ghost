@@ -93,6 +93,10 @@ async function addUnique(tableName, columns, transaction) {
             logging.warn(`Constraint for: ${columns} already exists for table: ${tableName}`);
             return;
         }
+        if (err.code === '23505') {
+            logging.warn(`Constraint for: ${columns} already exists for table: ${tableName}`);
+            return;
+        }
         throw err;
     }
 }
@@ -117,6 +121,10 @@ async function dropUnique(tableName, columns, transaction) {
             return;
         }
         if (err.code === 'ER_CANT_DROP_FIELD_OR_KEY') {
+            logging.warn(`Constraint for: ${columns} does not exist for table: ${tableName}`);
+            return;
+        }
+        if (err.code === '42704') {
             logging.warn(`Constraint for: ${columns} does not exist for table: ${tableName}`);
             return;
         }
@@ -197,7 +205,7 @@ async function addForeign({fromTable, fromColumn, toTable, toColumn, cascadeDele
             }
         }
     } catch (err) {
-        if (err.code === 'ER_DUP_KEY') {
+        if (err.code === 'ER_DUP_KEY' || err.code === '23505') {
             logging.warn(`Skipped adding foreign key from ${fromTable}.${fromColumn} to ${toTable}.${toColumn} - foreign key already exists`);
             return;
         }
@@ -246,7 +254,7 @@ async function dropForeign({fromTable, fromColumn, toTable, toColumn, transactio
             }
         }
     } catch (err) {
-        if (err.code === 'ER_CANT_DROP_FIELD_OR_KEY') {
+        if (err.code === 'ER_CANT_DROP_FIELD_OR_KEY' || err.code === '42704') {
             logging.warn(`Skipped dropping foreign key from ${fromTable}.${fromColumn} to ${toTable}.${toColumn} - foreign key does not exist`);
             return;
         }
@@ -298,7 +306,7 @@ async function addPrimaryKey(tableName, columns, transaction) {
             table.primary(columns);
         });
     } catch (err) {
-        if (err.code === 'ER_MULTIPLE_PRI_KEY') {
+        if (err.code === 'ER_MULTIPLE_PRI_KEY' || err.code == '42P16') {
             logging.warn(`Primary key constraint for: ${columns} already exists for table: ${tableName}`);
             return;
         }
